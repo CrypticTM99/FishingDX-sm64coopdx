@@ -1,0 +1,14 @@
+extern const GeoLayout Boat_geo[];
+extern Lights1 Boat_it_egyp_voile01_f3d_lights;
+extern Lights1 Boat_it_egyp_coque01_f3d_lights;
+extern Vtx Boat_Boat_mesh_layer_1_vtx_cull[8];
+extern Vtx Boat_Boat_mesh_layer_1_vtx_0[166];
+extern Gfx Boat_Boat_mesh_layer_1_tri_0[];
+extern Vtx Boat_Boat_mesh_layer_1_vtx_1[4136];
+extern Gfx Boat_Boat_mesh_layer_1_tri_1[];
+extern Gfx mat_Boat_it_egyp_voile01_f3d[];
+extern Gfx mat_revert_Boat_it_egyp_voile01_f3d[];
+extern Gfx mat_Boat_it_egyp_coque01_f3d[];
+extern Gfx mat_revert_Boat_it_egyp_coque01_f3d[];
+extern Gfx Boat_Boat_mesh_layer_1[];
+extern Gfx Boat_final_revert_mesh_layer_1[];
