@@ -1,9 +1,9 @@
--- name: Fishing DX v1.0
--- description: Fishing DX, 24 types of fish to be found in different stages, made by CrypticTM for sm64coopdx
--- incompatible:
+-- name: Fishing DX
+-- description: Fishing DX by CrypticTM. Chest shops, standing cast, pole_geo Gold rod.
+-- deluxe: true
 
 
-local VERSION = "1.0.0"
+local VERSION = "1.1.0"
 
 local function sfx(sound, m)
     if sound == nil or m == nil or m.marioObj == nil then
@@ -482,18 +482,54 @@ local function init_session_sync_fields()
     if gGlobalSyncTable.fdxHotSeq == nil then gGlobalSyncTable.fdxHotSeq = 0 end
 end
 
--- Host rolls one random stage with boosted rare odds for the session
+-- Host rolls a hot rare stage and rotates it about every 10 minutes (~18000 frames @ 30fps)
+local HOT_ROTATE_FRAMES = 18000
+local hotRotateTimer = 0
+
+local function roll_hot_stage(force)
+    init_session_sync_fields()
+    local isServer = true
+    if network_is_server ~= nil then isServer = network_is_server() end
+    if not isServer then return end
+    if #HOT_STAGE_POOL < 1 then return end
+
+    local prev = gGlobalSyncTable.fdxHotLevel or 0
+    local pick = HOT_STAGE_POOL[math.random(1, #HOT_STAGE_POOL)]
+    -- Prefer a different stage than the current one when possible
+    if #HOT_STAGE_POOL > 1 and not force then
+        local tries = 0
+        while pick.level == prev and tries < 8 do
+            pick = HOT_STAGE_POOL[math.random(1, #HOT_STAGE_POOL)]
+            tries = tries + 1
+        end
+    end
+    gGlobalSyncTable.fdxHotLevel = pick.level
+    gGlobalSyncTable.fdxHotLuck = math.random(18, 35)
+    gGlobalSyncTable.fdxHotSeq = (gGlobalSyncTable.fdxHotSeq or 0) + 1
+    hotRotateTimer = HOT_ROTATE_FRAMES
+end
+
 local function ensure_hot_stage_rolled()
     init_session_sync_fields()
     local isServer = true
     if network_is_server ~= nil then isServer = network_is_server() end
     if not isServer then return end
-    if (gGlobalSyncTable.fdxHotSeq or 0) > 0 then return end
-    if #HOT_STAGE_POOL < 1 then return end
-    local pick = HOT_STAGE_POOL[math.random(1, #HOT_STAGE_POOL)]
-    gGlobalSyncTable.fdxHotLevel = pick.level
-    gGlobalSyncTable.fdxHotLuck = math.random(18, 35)
-    gGlobalSyncTable.fdxHotSeq = 1
+
+    if (gGlobalSyncTable.fdxHotSeq or 0) <= 0 then
+        roll_hot_stage(true)
+        return
+    end
+
+    -- First host frame after join: arm the timer without re-rolling
+    if hotRotateTimer <= 0 then
+        hotRotateTimer = HOT_ROTATE_FRAMES
+        return
+    end
+
+    hotRotateTimer = hotRotateTimer - 1
+    if hotRotateTimer <= 0 then
+        roll_hot_stage(false)
+    end
 end
 
 local function broadcast_session_record(pname, record)
@@ -531,7 +567,7 @@ local function apply_incoming_session_announcements()
             hotBannerText = string.format("HOT STAGE: %s  (+%d rare luck)", lname, luck)
             hotBannerTimer = 360
             djui_chat_message_create(string.format(
-                "[Fishing] Rare fish are biting more at %s this session! (+%d luck)",
+                "[Fishing] Rare hotspot: %s (+%d luck). Rotates about every 10 minutes.",
                 lname, luck
             ))
         end
@@ -719,15 +755,41 @@ local function total_bait(pst)
     return (pst.bait1 or 0) + (pst.bait2 or 0) + (pst.bait3 or 0) + (pst.bait4 or 0)
 end
 
+-- Bait id spent on the current cast (0 = none). Refunded if the cast is cancelled.
+local castBaitId = 0
+
 local function consume_active_bait(pst)
     fix_active_bait(pst)
     local id = pst.activeBait or 1
     local n = get_bait_count(pst, id)
     if n <= 0 then return false end
     set_bait_count(pst, id, n - 1)
+    castBaitId = id
     fix_active_bait(pst)
     queue_save()
     return true
+end
+
+local function refund_cast_bait(pst)
+    if castBaitId == nil or castBaitId < 1 then
+        castBaitId = 0
+        return false
+    end
+    local id = castBaitId
+    castBaitId = 0
+    local n = get_bait_count(pst, id)
+    if n >= MAX_BAIT then
+        -- Cap hit: still clear the pending refund so we do not double-refund later
+        return false
+    end
+    set_bait_count(pst, id, n + 1)
+    fix_active_bait(pst)
+    queue_save()
+    return true
+end
+
+local function clear_cast_bait()
+    castBaitId = 0
 end
 
 local function get_rod_style()
@@ -876,10 +938,139 @@ local function get_current_level()
     return 0
 end
 
+
+-- Castle Grounds travel boat: placed beside the beach/pond and used as a stage selector.
+local travelBoat = nil
+local travelBoatLevel = -1
+local travelMenuOpen = false
+local travelIndex = 1
+local travelCooldown = 0
+
+-- Keep this list limited to the fishing destinations already supported by the mod.
+local TRAVEL_DESTINATIONS = {
+    {level = LEVEL_BOB,   area = 1, act = 1, name = "Broken (WIP)"},
+    {level = LEVEL_JRB,   area = 1, act = 1, name = "Jolly Roger Bay"},
+    {level = LEVEL_DDD,   area = 1, act = 1, name = "Dire, Dire Docks"},
+    {level = LEVEL_CCM,   area = 1, act = 1, name = "Cool, Cool Mountain"},
+    {level = LEVEL_LLL,   area = 1, act = 1, name = "Lethal Lava Land"},
+    {level = LEVEL_TOTWC, area = 1, act = 1, name = "Tower of the Wing Cap"},
+    {level = LEVEL_THI,   area = 1, act = 1, name = "Tiny-Huge Island"},
+}
+
+local function travel_boat_is_valid(o)
+    return o ~= nil and (obj_is_valid == nil or obj_is_valid(o))
+end
+
+local function clear_travel_boat()
+    if travel_boat_is_valid(travelBoat) then
+        obj_mark_for_deletion(travelBoat)
+    end
+    travelBoat = nil
+    travelBoatLevel = -1
+end
+
+local function spawn_travel_boat()
+    local level = get_current_level()
+    if level ~= LEVEL_CASTLE_GROUNDS then
+        clear_travel_boat()
+        return
+    end
+    if travel_boat_is_valid(travelBoat) then
+        return
+    end
+
+    -- Castle Grounds shoreline, moved away from the bridge and onto the pond/beach edge.
+    -- Keep the boat small enough to sit naturally in the water.
+    local model = E_MODEL_JRB_SHIP_LEFT_HALF_PART
+    if model == nil or (E_MODEL_NONE ~= nil and model == E_MODEL_NONE) then
+        model = E_MODEL_JRB_SHIP_RIGHT_HALF_PART
+    end
+    if model == nil or (E_MODEL_NONE ~= nil and model == E_MODEL_NONE) then
+        model = E_MODEL_WOODEN_POST
+    end
+
+    local bhv = id_bhvStaticObject
+    if bhv == nil then bhv = id_bhvBreakableBox end
+    if bhv == nil then bhv = id_bhvYellowCoin end
+
+    -- Push the boat substantially farther forward from the shoreline/bridge and into the pond.
+    -- Keep it at the pond water surface.
+    travelBoat = spawn_non_sync_object(bhv, model, 2070, -1400, 4200, function(o)
+        o.oFlags = OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE
+        o.oInteractType = 0
+        o.oIntangibleTimer = -1
+        o.oDamageOrCoinValue = 0
+        o.oNumLootCoins = 0
+        -- Force full opacity so the boat cannot inherit a translucent alpha state.
+        o.oOpacity = 350
+        o.oFaceAngleYaw = 0x4000
+        o.oMoveAngleYaw = 0x4000
+        if o.header ~= nil and o.header.gfx ~= nil then
+            o.header.gfx.scale.x = 0.76
+            o.header.gfx.scale.y = 0.90
+            o.header.gfx.scale.z = 1.65
+            if o.header.gfx.node ~= nil then
+                -- Explicitly keep the object active and clear any inherited transparent rendering state.
+                o.header.gfx.node.flags = (o.header.gfx.node.flags | GRAPH_RENDER_ACTIVE) & (~GRAPH_RENDER_INVISIBLE)
+            end
+        end
+    end)
+    travelBoatLevel = level
+end
+
+local function open_travel_menu()
+    travelMenuOpen = true
+    travelIndex = 1
+    showInventory = false
+    showFishMap = false
+end
+
+local function close_travel_menu()
+    travelMenuOpen = false
+end
+
+local function update_travel_boat(m, ctrl)
+    if travelCooldown > 0 then travelCooldown = travelCooldown - 1 end
+    spawn_travel_boat()
+
+    if travelMenuOpen then
+        if (ctrl.buttonPressed & U_JPAD) ~= 0 then
+            travelIndex = travelIndex - 1
+            if travelIndex < 1 then travelIndex = #TRAVEL_DESTINATIONS end
+        elseif (ctrl.buttonPressed & D_JPAD) ~= 0 then
+            travelIndex = travelIndex + 1
+            if travelIndex > #TRAVEL_DESTINATIONS then travelIndex = 1 end
+        elseif (ctrl.buttonPressed & B_BUTTON) ~= 0 then
+            close_travel_menu()
+        elseif (ctrl.buttonPressed & A_BUTTON) ~= 0 then
+            local dst = TRAVEL_DESTINATIONS[travelIndex]
+            close_travel_menu()
+            travelCooldown = 30
+            if warp_to_level ~= nil then
+                warp_to_level(dst.level, dst.area, dst.act)
+            else
+                djui_chat_message_create("Travel warp is unavailable in this build.")
+            end
+        end
+        return
+    end
+
+    if travel_boat_is_valid(travelBoat) and travelCooldown <= 0 then
+        local dx = m.pos.x - travelBoat.oPosX
+        local dy = m.pos.y - travelBoat.oPosY
+        local dz = m.pos.z - travelBoat.oPosZ
+        if (dx * dx + dy * dy + dz * dz) <= (650 * 650) then
+            if (ctrl.buttonPressed & A_BUTTON) ~= 0 then
+                open_travel_menu()
+            end
+        end
+    end
+end
+
 -- Custom fishable zones + visual water surfaces
 local CUSTOM_SPOTS = {
         {level = LEVEL_BOB, name = "Bridge Pool", x1 = -3600, x2 = -1800, y1 = -80, y2 = 520, z1 = 2800, z2 = 4600, waterY = 45},
-        {level = LEVEL_BOB, name = "Mud Lake",    x1 = -900,  x2 = 1800,  y1 = -80, y2 = 650, z1 = -800, z2 = 1600, waterY = 55},
+        {level = LEVEL_BOB, name = "Mud Lake",    x1 = -2900,  x2 = 1800,  y1 = -480, y2 = 650, z1 = -800, z2 = 1600, waterY = 55},
         {level = LEVEL_CASTLE_GROUNDS, name = "Castle Pond", x1 = -900, x2 = 900, y1 = 50, y2 = 500, z1 = 2500, z2 = 3600, waterY = 200},
         {level = LEVEL_CCM, name = "Penguin Pond", x1 = 2500, x2 = 4600, y1 = -5200, y2 = -4200, z1 = 3500, z2 = 5600, waterY = -4600},
 
@@ -1127,7 +1318,7 @@ local function spawn_lake_decor()
         -- Bridge Pool (south path under first wooden bridge) - clean dense water
         fill_water_surface(-3400, -2000, 3000, 4400, 48, 160)
         for i = 0, 8 do
-            local bx = -3300 + (i % 4) * 280
+            local bx = -3300 + (i % 4) * 480
             local bz = 3100 + math.floor(i / 4) * 350
             add_water_piece(E_MODEL_BUBBLE, bx, 52 + (i % 3) * 10, bz, 1.6, 1.6, 1.6)
         end
@@ -1145,7 +1336,7 @@ local function spawn_lake_decor()
         fill_water_surface(-750, 1650, -650, 1450, 55, 170)
         for i = 0, 11 do
             local bx = -550 + (i % 4) * 450
-            local bz = -400 + math.floor(i / 4) * 450
+            local bz = -4500 + math.floor(i / 4) * 450
             add_water_piece(E_MODEL_BUBBLE, bx, 58 + (i % 4) * 8, bz, 1.7, 1.7, 1.7)
         end
         -- Clear outer shoreline rings so the pool reads as real water
@@ -1156,7 +1347,7 @@ local function spawn_lake_decor()
                 450 + math.cos(ang) * r,
                 56,
                 400 + math.sin(ang) * r,
-                2.5, 0.55, 2.5)
+                2.5, 0.85, 2.5)
         end
         -- A few surface waves for motion at the center
         for i = 0, 5 do
@@ -1165,7 +1356,7 @@ local function spawn_lake_decor()
                 400 + math.cos(ang) * 220,
                 54,
                 350 + math.sin(ang) * 220,
-                3.5, 1.1, 3.5)
+                3.5, 1.6, 3.5)
         end
 
     elseif level == LEVEL_CASTLE_GROUNDS then
@@ -1605,6 +1796,8 @@ local function reset_fishing_state(pst)
     end
     lockedPos = nil
     destroy_fishing_objects()
+    -- Caller is responsible for refund_cast_bait before reset when cancelling.
+    -- Successful catch / normal end clears the pending refund so bait stays spent.
 end
 
 local function obj_is_alive(o)
@@ -1642,6 +1835,8 @@ local function make_visual_obj(model, x, y, z, sx, sy, sz)
         o.oAnimState = 0
         o.oDamageOrCoinValue = 0
         o.oNumLootCoins = 0
+        -- Force full opacity so the boat cannot inherit a translucent alpha state.
+        o.oOpacity = 255
         o.oInteractType = 0
         o.oIntangibleTimer = -1
         -- Stop coin spin animation from looking like spam/flash
@@ -2004,8 +2199,13 @@ local function cancel_if_needed(m, pst, ctrl)
         return
     end
     if (ctrl.buttonPressed & B_BUTTON) ~= 0 then
+        local refunded = refund_cast_bait(pst)
         reset_fishing_state(pst)
-        djui_chat_message_create("Reeled in. Fishing cancelled.")
+        if refunded then
+            djui_chat_message_create("Cancelled. Bait returned. (" .. total_bait(pst) .. " left)")
+        else
+            djui_chat_message_create("Reeled in. Fishing cancelled.")
+        end
     end
 end
 
@@ -2055,6 +2255,11 @@ local function mario_update(m)
     end
 
     local level = get_current_level()
+    update_travel_boat(m, ctrl)
+    if travelMenuOpen then
+        return
+    end
+
     if level == LEVEL_CASTLE_GROUNDS or level == LEVEL_DDD or level == LEVEL_JRB
         or level == LEVEL_BOB or level == LEVEL_LLL or level == LEVEL_CASTLE_COURTYARD then
         spawn_shop_signs()
@@ -2343,6 +2548,7 @@ local function mario_update(m)
             reelPulse = 12
             sfx(SOUND_ACTION_SWIM, m)
         elseif pst.biteTimer <= 0 then
+            clear_cast_bait()
             reset_fishing_state(pst)
             catchStreak = 0
             djui_chat_message_create("The fish got away...")
@@ -2382,6 +2588,7 @@ local function mario_update(m)
 
         if pst.miniProgress >= 100 then
             pst.fishState = STATE_CATCH
+            clear_cast_bait()
             pst.fishTimer = 200
             if not add_to_inventory(lastCaught) then
                 djui_chat_message_create("Inventory full! Sell fish at a market.")
@@ -2417,6 +2624,7 @@ local function mario_update(m)
             destroy_fishing_objects()
             sfx(SOUND_GENERAL_COIN, m)
         elseif pst.miniProgress <= 0 then
+            clear_cast_bait()
             reset_fishing_state(pst)
             catchStreak = 0
             sfx(SOUND_OBJ_BOO_LAUGH_LONG, m)
@@ -2459,6 +2667,41 @@ local function draw_text_centered(text, y, scale, r, g, b, a)
 end
 
 local function on_hud_render()
+
+    -- Castle Grounds travel boat prompt / destination selector.
+    if get_current_level() == LEVEL_CASTLE_GROUNDS and travel_boat_is_valid(travelBoat) then
+        local m = gMarioStates[0]
+        if m ~= nil and not travelMenuOpen then
+            local dx = m.pos.x - travelBoat.oPosX
+            local dy = m.pos.y - travelBoat.oPosY
+            local dz = m.pos.z - travelBoat.oPosZ
+            if (dx * dx + dy * dy + dz * dz) <= (650 * 650) then
+                djui_hud_set_color(255, 255, 255, 255)
+                djui_hud_print_text("A: Board Boat", 22, 180, 0.5)
+            end
+        end
+    end
+
+    if travelMenuOpen then
+        local sw = djui_hud_get_screen_width()
+        local sh = djui_hud_get_screen_height()
+        djui_hud_set_color(0, 0, 0, 210)
+        djui_hud_render_rect(sw * 0.18, sh * 0.16, sw * 0.64, sh * 0.68)
+        djui_hud_set_color(255, 255, 255, 255)
+        djui_hud_print_text("BOAT DESTINATIONS", sw * 0.25, sh * 0.21, 0.7)
+        for i = 1, #TRAVEL_DESTINATIONS do
+            local y = sh * 0.29 + (i - 1) * 22
+            if i == travelIndex then
+                djui_hud_set_color(255, 230, 80, 255)
+                djui_hud_print_text("> " .. TRAVEL_DESTINATIONS[i].name, sw * 0.25, y, 0.5)
+            else
+                djui_hud_set_color(255, 255, 255, 220)
+                djui_hud_print_text("  " .. TRAVEL_DESTINATIONS[i].name, sw * 0.25, y, 0.5)
+            end
+        end
+        djui_hud_set_color(200, 200, 200, 255)
+        djui_hud_print_text("Up/Down: Select   A: Travel   B: Cancel", sw * 0.25, sh * 0.78, 0.38)
+    end
     local m = gMarioStates[0]
     if m == nil then
         return
@@ -2767,34 +3010,36 @@ local function on_hud_render()
         djui_hud_set_color(12, 16, 28, 245)
         djui_hud_render_rect(invX, invY, invW, invH)
 
-        djui_hud_set_color(255, 190, 50, 255)
+        -- Keep the inventory header dark so the title is readable and never uses black-on-yellow text.
+        djui_hud_set_color(24, 32, 52, 255)
         djui_hud_render_rect(invX, invY, invW, 40)
-        djui_hud_set_color(20, 15, 5, 255)
+        djui_hud_set_color(255, 220, 90, 255)
         djui_hud_print_text("FISH INVENTORY", invX + 16, invY + 10, 0.52)
 
+        -- Give the wallet and rod their own rows. This prevents long values/names from overlapping.
         djui_hud_set_color(255, 230, 80, 255)
         djui_hud_print_text(string.format("Balance: $%d / $%d", get_wallet(), MAX_COINS), invX + 16, invY + 50, 0.36)
 
         local style = get_rod_style()
         local maxU = pst.rodMaxUnlocked or 1
         djui_hud_set_color(255, 200, 120, 255)
-        djui_hud_print_text(string.format("Rod: %s (%d/%d)", style.name, rodTier, maxU), invX + 180, invY + 50, 0.34)
+        djui_hud_print_text(string.format("Rod: %s (%d/%d)", style.name, rodTier, maxU), invX + 16, invY + 74, 0.34)
 
         local ab = get_bait_type(pst.activeBait or 1)
         djui_hud_set_color(140, 230, 255, 255)
-        djui_hud_print_text(string.format("Bait: %d/%d  Active: %s", total_bait(pst), MAX_BAIT, ab.name), invX + 16, invY + 74, 0.34)
+        djui_hud_print_text(string.format("Bait: %d/%d  Active: %s", total_bait(pst), MAX_BAIT, ab.name), invX + 16, invY + 98, 0.34)
         djui_hud_set_color(160, 200, 220, 255)
-        djui_hud_print_text(string.format("W:%d Cr:%d Mu:%d G:%d", pst.bait1 or 0, pst.bait2 or 0, pst.bait3 or 0, pst.bait4 or 0), invX + 16, invY + 94, 0.30)
+        djui_hud_print_text(string.format("W:%d Cr:%d Mu:%d G:%d", pst.bait1 or 0, pst.bait2 or 0, pst.bait3 or 0, pst.bait4 or 0), invX + 16, invY + 118, 0.30)
 
         djui_hud_set_color(180, 255, 180, 255)
-        djui_hud_print_text(string.format("Fish: %d / %d  (value %d)", #inventory, MAX_INVENTORY, get_inventory_value()), invX + 16, invY + 112, 0.36)
+        djui_hud_print_text(string.format("Fish: %d / %d  (value %d)", #inventory, MAX_INVENTORY, get_inventory_value()), invX + 16, invY + 138, 0.36)
 
         if personalRecord.weight > 0 then
             djui_hud_set_color(255, 220, 100, 255)
-            djui_hud_print_text(string.format("PR: %s  %.1f kg", personalRecord.name, personalRecord.weight), invX + 16, invY + 132, 0.34)
+            djui_hud_print_text(string.format("PR: %s  %.1f kg", personalRecord.name, personalRecord.weight), invX + 16, invY + 158, 0.34)
         end
 
-        local yOff = 148
+        local yOff = 176
         if #inventory == 0 then
             djui_hud_set_color(180, 180, 200, 255)
             djui_hud_print_text("No fish caught yet", invX + 16, invY + yOff, 0.42)
@@ -2888,6 +3133,8 @@ local function on_level_init()
     destroy_lake_decor()
     clear_shop_sign_objs()
     activeShopKind = nil
+    close_travel_menu()
+    clear_travel_boat()
     -- Persist on level load so progress is not lost mid-session
     save_progress()
 end
@@ -2902,6 +3149,8 @@ local function on_warp()
     destroy_lake_decor()
     clear_shop_sign_objs()
     activeShopKind = nil
+    close_travel_menu()
+    clear_travel_boat()
     save_progress()
 end
 
@@ -2909,14 +3158,14 @@ local function on_fishing_command(msg)
     msg = string.lower(msg or "")
     if msg == "" or msg == "help" then
         djui_chat_message_create("Fishing DX v" .. VERSION .. " by CrypticTM")
-        djui_chat_message_create("Hold L aim, release to cast  |  A: bite/reel  |  B: cancel / open shop")
-        djui_chat_message_create("Mod Menu: Fish Map  |  /fishing map")
+        djui_chat_message_create("Hold L aim, release to cast  |  A: bite/reel  |  B: cancel (returns bait) / shop")
+        djui_chat_message_create("Mod Menu: Fish Map  |  /fishing map  |  /fishing hot")
         djui_chat_message_create("Market: B sell, A unlock rod  |  Left D-Pad: switch rod")
         djui_chat_message_create("Inventory: Right D-Pad  |  Up/Down equip bait")
         djui_chat_message_create("Rods: Wood>Metal>Gold>Master>Legendary(1500)")
-        djui_chat_message_create("CCM penguin pond + Peach Slide edge pools")
-        djui_chat_message_create("VOID Fish (slide only): rare, hard, decays ~3 min - sell fast for coins!")
-        djui_chat_message_create("Balance max $10000  |  Progress auto-saves")
+        djui_chat_message_create("Rare hotspot rotates about every 10 minutes")
+        djui_chat_message_create("Host: /fishing give <player> <bait> [amount]")
+        djui_chat_message_create("VOID Fish decays ~3 min - sell fast")
         return true
     elseif msg == "bait" then
         local pst = ensure_sync()
@@ -2979,7 +3228,125 @@ local function on_fishing_command(msg)
         end
         return true
     end
-    djui_chat_message_create("Usage: /fishing [help|bait|pr|inv|rod]")
+
+    -- Host only: /fishing give <player> <bait> [amount]
+    -- bait: worm/1, cricket/2, mushroom/3, golden/4
+    local giveArgs = {}
+    for token in string.gmatch(msg, "%S+") do
+        table.insert(giveArgs, token)
+    end
+    if giveArgs[1] == "give" or giveArgs[1] == "givebait" then
+        local isServer = true
+        if network_is_server ~= nil then isServer = network_is_server() end
+        if not isServer then
+            djui_chat_message_create("Only the host can give bait.")
+            return true
+        end
+        if #giveArgs < 3 then
+            djui_chat_message_create("Usage: /fishing give <player> <bait> [amount]")
+            djui_chat_message_create("Bait: worm, cricket, mushroom, golden (or 1-4)")
+            return true
+        end
+
+        local targetName = giveArgs[2]
+        local baitToken = giveArgs[3]
+        local amount = tonumber(giveArgs[4] or "5") or 5
+        amount = math.floor(amount)
+        if amount < 1 then amount = 1 end
+        if amount > MAX_BAIT then amount = MAX_BAIT end
+
+        local baitId = nil
+        local lower = string.lower(baitToken)
+        if lower == "1" or lower == "worm" or lower == "worms" then baitId = 1
+        elseif lower == "2" or lower == "cricket" or lower == "crickets" then baitId = 2
+        elseif lower == "3" or lower == "mushroom" or lower == "mushrooms" or lower == "super" then baitId = 3
+        elseif lower == "4" or lower == "golden" or lower == "gold" or lower == "lure" then baitId = 4
+        else
+            baitId = tonumber(baitToken)
+        end
+        if baitId == nil or baitId < 1 or baitId > #BAIT_TYPES then
+            djui_chat_message_create("Unknown bait. Use worm, cricket, mushroom, golden (or 1-4).")
+            return true
+        end
+
+        local function player_name(i)
+            local np = gNetworkPlayers[i]
+            if np == nil then return nil end
+            if np.connected == false then return nil end
+            if np.name ~= nil and np.name ~= "" then return np.name end
+            return "Player " .. tostring(i)
+        end
+
+        local targetIdx = nil
+        local tlow = string.lower(targetName)
+        -- numeric index
+        local asNum = tonumber(targetName)
+        if asNum ~= nil then
+            local n = math.floor(asNum)
+            if gNetworkPlayers[n] ~= nil and gNetworkPlayers[n].connected ~= false then
+                targetIdx = n
+            end
+        end
+        if targetIdx == nil then
+            for i = 0, (MAX_PLAYERS or 16) - 1 do
+                local pname = player_name(i)
+                if pname ~= nil and string.find(string.lower(pname), tlow, 1, true) then
+                    targetIdx = i
+                    break
+                end
+            end
+        end
+        if targetIdx == nil then
+            djui_chat_message_create("Player not found: " .. targetName)
+            return true
+        end
+
+        local pst = gPlayerSyncTable[targetIdx]
+        if pst == nil then
+            djui_chat_message_create("Could not access that player's data.")
+            return true
+        end
+
+        -- Ensure bait fields exist on their sync table
+        if pst.bait1 == nil then pst.bait1 = 0 end
+        if pst.bait2 == nil then pst.bait2 = 0 end
+        if pst.bait3 == nil then pst.bait3 = 0 end
+        if pst.bait4 == nil then pst.bait4 = 0 end
+
+        local function getc(id)
+            if id == 1 then return pst.bait1 or 0 end
+            if id == 2 then return pst.bait2 or 0 end
+            if id == 3 then return pst.bait3 or 0 end
+            if id == 4 then return pst.bait4 or 0 end
+            return 0
+        end
+        local function setc(id, n)
+            if n < 0 then n = 0 end
+            if n > MAX_BAIT then n = MAX_BAIT end
+            if id == 1 then pst.bait1 = n
+            elseif id == 2 then pst.bait2 = n
+            elseif id == 3 then pst.bait3 = n
+            elseif id == 4 then pst.bait4 = n end
+            pst.bait = (pst.bait1 or 0) + (pst.bait2 or 0) + (pst.bait3 or 0) + (pst.bait4 or 0)
+        end
+
+        local before = getc(baitId)
+        local room = MAX_BAIT - before
+        if room <= 0 then
+            djui_chat_message_create("That player is already at the bait cap for this type.")
+            return true
+        end
+        local give = amount
+        if give > room then give = room end
+        setc(baitId, before + give)
+
+        local bt = get_bait_type(baitId)
+        local pname = player_name(targetIdx) or ("#" .. tostring(targetIdx))
+        djui_chat_message_create(string.format("Gave %s x%d %s (now %d).", pname, give, bt.name, before + give))
+        return true
+    end
+
+    djui_chat_message_create("Usage: /fishing [help|bait|pr|inv|rod|map|hot|give]")
     return true
 end
 
@@ -3018,7 +3385,7 @@ local function on_mod_menu_fish_list_chat(index)
 end
 
 if hook_mod_menu_text ~= nil then
-    hook_mod_menu_text("Fishing DX - Fish Map (WIP)")
+    hook_mod_menu_text("Fishing DX - Fish Map")
     hook_mod_menu_text("Locations for every fish type")
 end
 if hook_mod_menu_button ~= nil then
@@ -3032,4 +3399,4 @@ hook_event(HOOK_BEFORE_SET_MARIO_ACTION, before_set_mario_action)
 hook_event(HOOK_ON_LEVEL_INIT, on_level_init)
 hook_event(HOOK_ON_WARP, on_warp)
 hook_event(HOOK_ALLOW_INTERACT, allow_interact)
-hook_chat_command("fishing", "[help|bait|pr|inv|rod|map] Fishing DX commands", on_fishing_command)
+hook_chat_command("fishing", "[help|bait|pr|inv|rod|map|hot|give] Fishing DX", on_fishing_command)
