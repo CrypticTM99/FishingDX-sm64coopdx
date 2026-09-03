@@ -1,0 +1,16 @@
+extern const GeoLayout metalpole_geo[];
+extern Lights1 polemetal_pole0_mat_004_f3d_lights;
+extern Lights1 polemetal_uki0_mat_003_f3d_lights;
+extern u8 polemetal_pole0_ci8[];
+extern u8 polemetal_pole0_pal_rgba16[];
+extern Vtx polemetal_metalpole_mesh_layer_1_vtx_cull[8];
+extern Vtx polemetal_metalpole_mesh_layer_1_vtx_0[47];
+extern Gfx polemetal_metalpole_mesh_layer_1_tri_0[];
+extern Vtx polemetal_metalpole_mesh_layer_1_vtx_1[94];
+extern Gfx polemetal_metalpole_mesh_layer_1_tri_1[];
+extern Gfx mat_polemetal_pole0_mat_004_f3d[];
+extern Gfx mat_revert_polemetal_pole0_mat_004_f3d[];
+extern Gfx mat_polemetal_uki0_mat_003_f3d[];
+extern Gfx mat_revert_polemetal_uki0_mat_003_f3d[];
+extern Gfx polemetal_metalpole_mesh_layer_1[];
+extern Gfx polemetal_final_revert_mesh_layer_1[];
