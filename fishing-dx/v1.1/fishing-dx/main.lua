@@ -1,5 +1,5 @@
--- name: Fishing DX
--- description: Fishing DX by CrypticTM. Chest shops, standing cast, pole_geo Gold rod.
+-- name: Fishing DX v1.1 (Test version)
+-- description: Fishing DX by CrypticTM. with my added Chest shops, Press and hold L to cast, and custom rods
 -- deluxe: true
 
 
