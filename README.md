@@ -1,10 +1,10 @@
-# Fishing DX v1.2.1
+# Fishing DX v1.2.4 (Work in progress)
 
 Created by **CrypticTM** for sm64coopdx.
 
 ## Features
 
-* Fish across SM64 stages with rods, bait, shops, and prestige after you have $5000 and unlock each rod!
+* Fish more than 30 types across SM64 stages with rods, bait, shops, and prestige after you have $5000 and unlock each rod!
 * New fish roster + Chronofin mystery on Tick Tock Clock (6%)
 * Mythic rod tier after Legendary (uses masterpole mesh for now)
 * Fish Market on Castle upper floor near the TTM painting
