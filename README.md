@@ -1,29 +1,39 @@
-# Fishing DX v1.2.4 (Work in progress)
+# Fishing DX v1.3.0 (release)
 
 Created by **CrypticTM** for sm64coopdx.
 
 ## Features
 
-* Fish more than 30 types across SM64 stages with rods, bait, shops, and prestige after you have $5000 and unlock each rod!
-* New fish roster + Chronofin mystery on Tick Tock Clock (6%)
-* Mythic rod tier after Legendary (uses masterpole mesh for now)
-* Fish Market on Castle upper floor near the TTM painting
-* Castle Grounds boat opens a stage list (Up/Down, A to travel)
-* Custom boat in Dire Dire Docks with a solid deck you can stand on
-* Hollowfin mystery fish on Tall Tall Mountain (6% bite chance, hardest fight)
-* Hosts can enable the dev commands and give bait
-* Cancel with B returns your bait; don't worry about those buggy catches
-* You can fish with no bait — only common / low-tier fish will bite
-* Fishing Guide and Hard Mode signposts use high-contrast panels
-* Full Fishing Map in Mod Menu (stages, spawns, values, difficulty)
+* Fish across SM64 stages with rods, bait, shops, and prestige
+* Large fish roster including stage exclusives and mystery fish
+* Rod tiers: Wood, Metal, Steel, Iron, Gold, Master, Legendary, Mythic
+* Fish Markets and Bait Shops across the castle and several stages
+* Castle Grounds travel boat with stage select
+* Custom boat docks in Dire Dire Docks and Jolly Roger Bay
+* Hollowfin (TTM), Prismwraith (RR), Chronofin (TTC) mystery catches
+* No-bait casting (common / low-tier only)
+* Hard Mode signpost (harder fights, 2x sell value)
+* Fishing Guide signpost and full Fishing Map in the Mod Menu
+* Catch celebration with fish model above Mario
+* **NEW (v1.3.0):** On a successful catch, a fish model is tossed from the water onto the shore / near your feet. Walk up and press **B** to pick it up and hold it; press **B** again to toss it.
+* Optional heavy-fish tug: `/fishing dev 1` on, `/fishing dev 0` off
+* **Bubba FATALITY:** Catching Bubba with a rod below Gold triggers a silly cutscene (Gold+ = normal catch) — dialogue, charge, slow-mo QTE, ragdoll toss, WAHOO, explosion, then "Bubba always gets the last laugh... FATALITY! Bubba Wins!"
 
-## Custom fishing rod models (WIP)
+## Controls
 
-actors/pole (pole\_geo). Refresh mods so DynOS compiles it.
+* Hold **L** to aim, release to cast
+* **A** on bite / reel  |  **B** cancel cast (bait returned) / open shop or guide
+* While not fishing: **B** near a landed fish = pick up & hold; **B** while holding = toss
+* Left D-Pad: switch rod  |  Right D-Pad: inventory  |  Up/Down: bait
 
-## Boat
+## Custom assets
 
-actors/Boat (Boat\_geo). Spawns in DDD with collision pads. Also used for the Castle Grounds travel boat. 
-Feel free to fork or change up the mod and use for yourself :D 
-Credit is optional , just please dont use AI to slop the mod !
+* Rods under `actors/` (woodrod, metalpole, pole, masterpole, fishingrod_legendary)
+* Boat under `actors/Boat` (`Boat_geo`)
+* Hollowfin texture under `textures/hollowfin.png`
 
+## Credits
+
+* **CrypticTM** — Fishing DX
+
+Feel free to fork or change the mod. Credit is appreciated.
