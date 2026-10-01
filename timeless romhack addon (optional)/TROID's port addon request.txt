@@ -1,0 +1,7 @@
+Adding to the git for public version
+
+Adds a bunch of named fish tailored to the ported romhack, also added in some custom models for the fish that appear here
+Adds in a flying shy guy (or his wooden cousin) roaming the skies
+Added the functionality of fishing in c2, c5 , c7 and castle grounds (spawn) , I'll check for any water edges to experiment further*
+
+(WILL REQUIRE TIMELESS RENDEVOUS TO WORK PROPERLY) 
