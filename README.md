@@ -1,4 +1,4 @@
-# Fishing DX v1.3.0 (release)
+# Fishing DX v1.3.1 (release)
 
 Created by **CrypticTM** for sm64coopdx.
 
@@ -34,6 +34,6 @@ Created by **CrypticTM** for sm64coopdx.
 
 ## Credits
 
-* **CrypticTM** — Fishing DX
+* **CrypticTM** - Fishing DX, Models + Programming
 
 Feel free to fork or change the mod. Credit is appreciated.
