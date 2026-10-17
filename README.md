@@ -1,4 +1,4 @@
-# Fishing DX v1.3.1 (release)
+# Fishing DX v1.3.2 (release)
 
 Created by **CrypticTM** for sm64coopdx.
 
@@ -16,8 +16,8 @@ Created by **CrypticTM** for sm64coopdx.
 * Fishing Guide signpost and full Fishing Map in the Mod Menu
 * Catch celebration with fish model above Mario
 * **NEW (v1.3.0):** On a successful catch, a fish model is tossed from the water onto the shore / near your feet. Walk up and press **B** to pick it up and hold it; press **B** again to toss it.
-* Optional heavy-fish tug: `/fishing dev 1` on, `/fishing dev 0` off
-* **Bubba FATALITY:** Catching Bubba with a rod below Gold triggers a silly cutscene (Gold+ = normal catch) — dialogue, charge, slow-mo QTE, ragdoll toss, WAHOO, explosion, then "Bubba always gets the last laugh... FATALITY! Bubba Wins!"
+* Optional heavy-fish tug: `/fishing dev 1` on, `/fishing dev 0` off (I can simply remove this, people really like it? Whats the issue? (None found , lmao)
+* **Bubba FATALITY:** Catching Bubba with a rod below Gold triggers a silly cutscene -----------> (Gold+ = normal catch, meaning it won't play the little animation) <----------- dialogue, charge, "Bubba gets the last laugh", but yep don't worry about the log, your catch is saved! YAY!
 
 ## Controls
 
