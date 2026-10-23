@@ -1,0 +1,16 @@
+extern const GeoLayout goombafish_geo[];
+extern Lights1 goombafish_gdg_f3d_lights;
+extern Lights1 goombafish_fsh_arowana_png_f3d_lights;
+extern u8 goombafish_goomba_rgba16[];
+extern u8 goombafish_fsh_arowana_rgba16[];
+extern Vtx goombafish_goomba_mesh_layer_1_vtx_cull[8];
+extern Vtx goombafish_goomba_mesh_layer_1_vtx_0[422];
+extern Gfx goombafish_goomba_mesh_layer_1_tri_0[];
+extern Vtx goombafish_goomba_mesh_layer_1_vtx_1[184];
+extern Gfx goombafish_goomba_mesh_layer_1_tri_1[];
+extern Gfx mat_goombafish_gdg_f3d[];
+extern Gfx mat_revert_goombafish_gdg_f3d[];
+extern Gfx mat_goombafish_fsh_arowana_png_f3d[];
+extern Gfx mat_revert_goombafish_fsh_arowana_png_f3d[];
+extern Gfx goombafish_goomba_mesh_layer_1[];
+extern Gfx goombafish_final_revert_mesh_layer_1[];

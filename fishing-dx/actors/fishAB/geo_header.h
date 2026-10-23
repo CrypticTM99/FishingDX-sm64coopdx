@@ -1,0 +1,10 @@
+extern const GeoLayout fishAB_geo[];
+extern Lights1 fishAB_fsh_arowana_png_f3d_lights;
+extern u8 fishAB_fsh_arowana_rgba16[];
+extern Vtx fishAB_fsh_arowana_mesh_layer_1_vtx_cull[8];
+extern Vtx fishAB_fsh_arowana_mesh_layer_1_vtx_0[184];
+extern Gfx fishAB_fsh_arowana_mesh_layer_1_tri_0[];
+extern Gfx mat_fishAB_fsh_arowana_png_f3d[];
+extern Gfx mat_revert_fishAB_fsh_arowana_png_f3d[];
+extern Gfx fishAB_fsh_arowana_mesh_layer_1[];
+extern Gfx fishAB_final_revert_mesh_layer_1[];

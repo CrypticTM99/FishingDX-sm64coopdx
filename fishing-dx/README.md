@@ -1,34 +1,50 @@
-Fishing DX
+# Fishing DX v1.3.1 (release)
 
-v1.0 by CrypticTM
+Created by **CrypticTM** for sm64coopdx.
 
+## Features
 
+* Fish across SM64 stages with rods, bait, shops, and prestige
+* Large fish roster including stage exclusives and mystery fish
+* Rod tiers: Wood, Metal, Steel, Iron, Gold, Master, Legendary, Mythic
+* Fish Markets and Bait Shops across the castle and several stages
+* Castle Grounds travel boat with stage select
+* Custom boat docks in Dire Dire Docks and Jolly Roger Bay
+* Hollowfin (TTM), Prismwraith (RR), Chronofin (TTC) mystery catches
+* No-bait casting (common / low-tier only)
+* Hard Mode signpost (harder fights, 2x sell value)
+* Fishing Guide signpost and full Fishing Map in the Mod Menu
+* Catch celebration with fish model above Mario
+* **NEW (v1.3.1):** On a successful catch, a fish model is tossed from the water onto the shore / near your feet. Walk up and press **B** to pick it up and hold it; press **B** again to toss it.
+* Optional heavy-fish tug: `/fishing dev 1` on, `/fishing dev 0` off
+* **Bubba FATALITY:** Catching Bubba with a rod below Gold triggers a silly cutscene
 
-You can fish in Super Mario 64 now. Stand by any water, hold L to aim, let go to cast, and mash A when something bites. B cancels or opens a shop if you're standing next to one.
+## Controls
 
+* Hold **L** to aim, release to cast
+* **A** on bite / reel  |  **B** cancel cast / open shop or guide
+* While not fishing: **B** near a landed fish = pick up & hold; **B** while holding = toss
+* Left D-Pad: switch rod  |  Right D-Pad: inventory  |  Up/Down: bait
 
+## Custom assets
 
-There's a whole set of fish to catch, from basic Cheep Cheeps up to rares that only show up in certain stages. Some are locked to Cool Cool Mountain, Peach's Slide, or Lava Land. One of them is a VOID fish that starts rotting in your inventory if you don't sell it fast enough, so don't sit on it.
+* Rods under `actors/` (woodrod, metalpole, pole, masterpole, fishingrod_legendary)
+* Boat under `actors/Boat` (`Boat_geo`)
+* Hollowfin texture under `textures/hollowfin.png`
 
+## Credits
 
+* **CrypticTM** - Fishing DX
 
-Money from selling goes into its own wallet, separate from your normal coins. Spend it on better bait or the next rod. Rods are Wood, Metal, Gold, Master, Legendary. The Gold one uses a custom pole model included in the mod. Better rods and bait just make rare catches more likely.
+Feel free to fork or change the mod. Credit is appreciated.
 
+Some of the new stuff in v1.3.1
 
+## Achievements (v1.3.1)
 
-Bob-omb Battlefield has two actual pools added so you can fish there without hunting for a puddle. A few other stages get water so the spots make sense. Shops are the treasure chest props you see in the world. Walk up, press B, buy bait or sell what you've got.
+Open **Mod Menu -> Fishing DX - Achievements -> View Achievements** to see progress (15 goals + secret). 
+Progress is saved.
 
+## Henry the Shark
 
-
-Right D-Pad opens your inventory. Left D-Pad switches rods you've unlocked. 
-
-The mod menu has a fish map if you want to know where everything lives, or type /fishing in chat. (WIP)
-
-
-
-Drop the folder in your mods folder and turn it on. Refresh once so the gold pole compiles. 
-
-Works great and saves your progress.
-
-Have fun fishing!
-
+Henry uses the sushi shark model when available (Bubba fallback).

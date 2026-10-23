@@ -1,0 +1,16 @@
+extern const GeoLayout masterpole_geo[];
+extern Lights1 masterpole_pole0_mat_004_f3d_lights;
+extern Lights1 masterpole_uki0_mat_003_f3d_lights;
+extern u8 masterpole_pole0_ci8[];
+extern u8 masterpole_pole0_pal_rgba16[];
+extern Vtx masterpole_masterpole_mesh_layer_1_vtx_cull[8];
+extern Vtx masterpole_masterpole_mesh_layer_1_vtx_0[47];
+extern Gfx masterpole_masterpole_mesh_layer_1_tri_0[];
+extern Vtx masterpole_masterpole_mesh_layer_1_vtx_1[94];
+extern Gfx masterpole_masterpole_mesh_layer_1_tri_1[];
+extern Gfx mat_masterpole_pole0_mat_004_f3d[];
+extern Gfx mat_revert_masterpole_pole0_mat_004_f3d[];
+extern Gfx mat_masterpole_uki0_mat_003_f3d[];
+extern Gfx mat_revert_masterpole_uki0_mat_003_f3d[];
+extern Gfx masterpole_masterpole_mesh_layer_1[];
+extern Gfx masterpole_final_revert_mesh_layer_1[];

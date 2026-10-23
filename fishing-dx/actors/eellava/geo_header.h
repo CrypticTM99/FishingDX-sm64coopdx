@@ -1,0 +1,15 @@
+extern const GeoLayout eellava_geo[];
+extern Lights1 eellava_hire_f3d_lights;
+extern Lights1 eellava_body_f3d_lights;
+extern u8 eellava_unagi_rgba16[];
+extern Vtx eellava_eellava_mesh_layer_1_vtx_cull[8];
+extern Vtx eellava_eellava_mesh_layer_1_vtx_0[178];
+extern Gfx eellava_eellava_mesh_layer_1_tri_0[];
+extern Vtx eellava_eellava_mesh_layer_1_vtx_1[723];
+extern Gfx eellava_eellava_mesh_layer_1_tri_1[];
+extern Gfx mat_eellava_hire_f3d[];
+extern Gfx mat_revert_eellava_hire_f3d[];
+extern Gfx mat_eellava_body_f3d[];
+extern Gfx mat_revert_eellava_body_f3d[];
+extern Gfx eellava_eellava_mesh_layer_1[];
+extern Gfx eellava_final_revert_mesh_layer_1[];

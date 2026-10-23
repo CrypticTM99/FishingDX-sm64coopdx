@@ -1,0 +1,15 @@
+extern const GeoLayout eel_geo[];
+extern Lights1 eel_hire_f3d_lights;
+extern Lights1 eel_body_f3d_lights;
+extern u8 eel_unagi_rgba16[];
+extern Vtx eel_eel_mesh_layer_1_vtx_cull[8];
+extern Vtx eel_eel_mesh_layer_1_vtx_0[178];
+extern Gfx eel_eel_mesh_layer_1_tri_0[];
+extern Vtx eel_eel_mesh_layer_1_vtx_1[723];
+extern Gfx eel_eel_mesh_layer_1_tri_1[];
+extern Gfx mat_eel_hire_f3d[];
+extern Gfx mat_revert_eel_hire_f3d[];
+extern Gfx mat_eel_body_f3d[];
+extern Gfx mat_revert_eel_body_f3d[];
+extern Gfx eel_eel_mesh_layer_1[];
+extern Gfx eel_final_revert_mesh_layer_1[];
