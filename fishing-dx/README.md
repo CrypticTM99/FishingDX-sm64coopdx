@@ -1,4 +1,4 @@
-# Fishing DX v1.3.1 (release)
+# Fishing DX v1.3.2 (release)
 
 Created by **CrypticTM** for sm64coopdx.
 
