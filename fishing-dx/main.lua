@@ -1,7 +1,5 @@
 -- name: Fishing DX v1.3.2
--- description: 47 fish types across various stages, catch fish with your friends!\
-Luigi has a new fishing pal! Maybe you can feed them some of your catch?\
-Created by CrypticTM
+-- description: Fish across SM64 stages with rods, bait, shops, and prestige.\n\n47 unique fish including stage exclusives and mystery catches.\nCustom boats, Fishing Guide, Hard Mode, achievements, and more.\n\nCreated by CrypticTM
 -- incompatible: romhack
 
 local VERSION = "1.3.2"
